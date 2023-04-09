@@ -6,7 +6,7 @@ interface senseQuery {
   keyword: string
 }
 
-export const querySenseByKeyword = (data: senseQuery) => ipcRenderer.send(channelConst.QUERY_SENSE_BY_KEYWORD, data)
+export const querySenseByKeyword = (data: senseQuery) => ipcRenderer.send(channelConst.QUERY_DETAIL_BY_KEYWORD, data)
 
 interface timelineQuery {
   panelId: string,

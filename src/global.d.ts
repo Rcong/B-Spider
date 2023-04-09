@@ -16,18 +16,8 @@ interface IpcRendererResponse<T> {
   code: number
   msg?: string
   data?: {
-    index: number
+    keywordUrl?: string
+    panelId: number
     list: T[]
   }
-}
-
-interface CardItem {
-  isLoading: boolean
-  senseList: SenseItem[]
-  timeline: TimelineItem[]
-}
-
-interface CardList {
-  cardList: CardItem[]
-  setCardList: (list: CardItem[]) => void
 }
