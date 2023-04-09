@@ -1,9 +1,9 @@
 {
   "name": "b-spider",
-  "version": "2.2.0",
+  "version": "1.0.0",
   "main": "dist-electron/main/index.js",
   "description": "Electron Vite React boilerplate.",
-  "author": "草鞋没号 <308487730@qq.com>",
+  "author": "butayarou <butayarou@foxmail.com>",
   "license": "MIT",
   "private": true,
   "debug": {
@@ -19,12 +19,11 @@
     "e2e": "playwright test"
   },
   "dependencies": {
-    "antd": "^5.4.0",
-    "cheerio": "^1.0.0-rc.12",
-    "classnames": "^2.3.2",
+    "antd": "5.4.0",
+    "cheerio": "1.0.0-rc.12",
+    "classnames": "2.3.2",
     "electron-updater": "5.3.0",
-    "superagent": "^8.0.9",
-    "zustand": "4.1.4"
+    "superagent": "8.0.9"
   },
   "devDependencies": {
     "@playwright/test": "1.32.0",
@@ -34,6 +33,7 @@
     "electron": "23.2.0",
     "electron-builder": "23.6.0",
     "react": "18.2.0",
+    "zustand": "4.1.4",
     "react-dom": "18.2.0",
     "react-router-dom": "6.4.2",
     "sass": "1.60.0",
