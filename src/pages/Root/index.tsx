@@ -18,12 +18,15 @@ export const Root: React.FC = () => {
 
   return (
     <Layout className={s.layout}>
-      <FloatButton
-        className={s.addButton}
-        type="primary"
-        icon={<PlusOutlined />}
-        onClick={onAddClick}
-      />
+      { 
+        panelIdList.length <= 2 &&
+          <FloatButton
+            className={s.addButton}
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={onAddClick}
+          />
+      }
       <Content className={s.content}>
         { panelIdList.map(panelId => <CardPanel className={s.mr12} key={panelId} panelId={panelId} /> ) }
       </Content>

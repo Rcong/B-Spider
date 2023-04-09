@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import type { RadioChangeEvent } from 'antd';
 import { ipcRenderer } from 'electron'
-import { Button, Form, Select, Input, Card, Divider, Timeline, Spin, Radio, message } from 'antd';
+import { Button, Form, Select, Input, Card, Divider, Timeline, Spin, Radio, notification } from 'antd';
 import { querySenseByKeyword, queryTimeline } from '@/lib/root-api';
 import { divideInto, getYear, completeYearArray } from '@/lib/utils'
 import { usePanelIdStore } from '@/stores/usePanelIdStore';
-import { CloseOutlined } from '@ant-design/icons';
+import { CloseOutlined, SmileOutlined } from '@ant-design/icons';
 import { channelConst } from '@/const'
 import s from './cardPanel.module.scss'
 import c from 'classnames'
@@ -19,7 +19,6 @@ interface Props {
 }
 
 export const CardPanel: React.FC<Props> = ({ panelId, className }) => {
-  const [messageApi] = message.useMessage();
   const { panelIdList, setPanelIdList } = usePanelIdStore();
   const [senseLoading, setSenseLoading] = useState(false);
   const [timelineLoading, setTimelineLoading] = useState(false);
@@ -31,19 +30,24 @@ export const CardPanel: React.FC<Props> = ({ panelId, className }) => {
   const [selectedYear , setSelectedYear] = useState<string>('');
 
   useEffect(() => {
-    ipcRenderer.on(`${channelConst.MAIN_PROCESS_SENSE_LIST}_${panelId}`, onSenseListChange)
+    ipcRenderer.on(`${channelConst.MAIN_PROCESS_KEYWORD_DETAIL}_${panelId}`, onSenseListChange)
     ipcRenderer.on(`${channelConst.MAIN_PROCESS_TIMELINE}_${panelId}`, onTimelineChange)
     return () => {
-      ipcRenderer.off(`${channelConst.MAIN_PROCESS_SENSE_LIST}_${panelId}`, onSenseListChange)
+      ipcRenderer.off(`${channelConst.MAIN_PROCESS_KEYWORD_DETAIL}_${panelId}`, onSenseListChange)
       ipcRenderer.off(`${channelConst.MAIN_PROCESS_TIMELINE}_${panelId}`, onTimelineChange)
     }
   }, [])
 
   const onSearch = async (keyword: string) => {
     if (!keyword || !keyword.trim()) {
-      messageApi.open({ type: 'warning', content: '请先输入关键词' });
+      notification.open({ message: '提示', description: '请先输入关键词', icon: <SmileOutlined className={s.smileOutlined} /> });
       return
     }
+    setSenseList([]);
+    setTimeline([]);
+    setYearList([]);
+    setYearToPosition({});
+    setSelectedYear('');
     setSenseLoading(true);
     querySenseByKeyword({ panelId, keyword })
   };
@@ -54,13 +58,22 @@ export const CardPanel: React.FC<Props> = ({ panelId, className }) => {
   };
 
   const onSenseListChange = (event: Electron.IpcRendererEvent, response: IpcRendererResponse<SenseItem>) => {
-    const { code, data } = response;
+    const { code, data, msg } = response;
+    console.info(response)    
     setSenseLoading(false);
     if (code === 0 || !data) {
+      notification.open({
+        message: '提示',
+        description: '貌似没查出什么东西~~~',
+        icon: <SmileOutlined className={s.smileOutlined} />
+      });
       return
     }
-    const { list } = data;      
+    const { list, keywordUrl } = data; 
     setSenseList(list);
+    if (list.length === 0 && keywordUrl) {
+      onChange(keywordUrl)
+    }
   };
 
   const onTimelineChange = (event: Electron.IpcRendererEvent, response: IpcRendererResponse<TimelineItem>) => {
