@@ -1,0 +1,28 @@
+.layout {
+  min-height: 100vh;
+}
+
+.header {
+  background: var(--background-white);
+}
+
+.addButton {
+  right: 24px;
+  bottom: 24px;
+}
+
+.content {
+  display: flex;
+  flex-direction: row;
+  overflow: auto;
+  padding: var(--container-padding);
+  box-sizing: border-box;
+}
+
+.mr12 {
+  margin-right: 12px;
+}
+
+.f1 {
+  flex: 1;
+}

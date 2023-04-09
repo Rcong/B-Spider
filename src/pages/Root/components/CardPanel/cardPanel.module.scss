@@ -1,0 +1,10 @@
+.cardItem {
+  min-width: 360px;
+  width: calc(33% - 12px);
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
