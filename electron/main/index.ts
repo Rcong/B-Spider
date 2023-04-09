@@ -1,8 +1,9 @@
 import { app, BrowserWindow, shell, ipcMain } from 'electron'
 import { release } from 'node:os'
 import { join } from 'node:path'
+import { updateChannel } from './channel';
 import { update } from './update'
-import { getPageUrl, getPageContent, getSenseList, getExperienceList } from './test';
+
 
 // The built directory structure
 //
@@ -75,12 +76,8 @@ async function createWindow() {
     return { action: 'deny' }
   })
 
-  // const { pageUrl } = await getPageUrl({ searchKey: '习近平' });
-  // const res = await getPageContent({ pageUrl });
-  // // const senseList = getSenseList({ content: res.data, pageUrl, })
-  // const experienceList = getExperienceList({ content: res.data })
+  updateChannel();
   
-  // console.info(experienceList)
   // Apply electron-updater
   update(win)
 }
@@ -125,10 +122,3 @@ ipcMain.handle('open-win', async  (_, arg) => {
     childWindow.loadFile(indexHtml, { hash: arg })
   }
 })
-
-// ipcMain.on('asynchronous-message', function(event, arg) {
-//   console.log(arg);  // prints "ping"
-//   event.sender.send('asynchronous-reply', 'pong');
-// });
-
-

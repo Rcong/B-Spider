@@ -2,7 +2,112 @@
 const electron = require("electron");
 const node_os = require("node:os");
 const node_path = require("node:path");
+const request = require("superagent");
+const cheerio = require("cheerio");
 const electronUpdater = require("electron-updater");
+const channelConst = {
+  QUERY_SENSE_BY_KEYWORD: "query-sense-by-keyword",
+  MAIN_PROCESS_SENSE_LIST: "main-process-sense-list",
+  QUERY_TIMELINE: "query-timeline",
+  MAIN_PROCESS_TIMELINE: "main-process-timeline"
+};
+async function getPageUrl({ searchKey }) {
+  try {
+    const key = encodeURIComponent(searchKey);
+    const response = await request.post(`https://baike.baidu.com/api/openapi/BaikeLemmaCardApi?appid=379020&bk_key=${key}`);
+    return { code: 200, data: response };
+  } catch (error) {
+    return { code: 0, msg: error.msg };
+  }
+}
+function getPageContent({ pageUrl }) {
+  return new Promise((resolve, reject) => {
+    request.post(pageUrl).set("sec-ch-ua", 'Google Chrome";v="111", "Not(A:Brand";v="8", "Chromium";v="111').set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36").end((err, res) => {
+      if (err) {
+        return reject({ code: 0, data: err });
+      }
+      resolve({ code: 200, data: res.text });
+    });
+  });
+}
+function getSenseList({ content, pageUrl }) {
+  try {
+    const $ = cheerio.load(content);
+    const senseList = [];
+    $("#J-polysemant-content li a").each(function(index, element) {
+      var $element = $(element);
+      senseList.push({ label: $element.html(), value: index === 0 ? pageUrl : `http:${$element.attr("data-href")}` });
+    });
+    return { code: 200, data: senseList };
+  } catch (error) {
+    return { code: 0, msg: error.msg };
+  }
+}
+function getTimeline({ content }) {
+  try {
+    const $ = cheerio.load(content);
+    const timeline = [];
+    $('h2[data-title="人物履历"] ~ .para:not(h2[data-title="人物履历"] ~ .BK-content-margin ~ .para)').each(function(i, element) {
+      var $element = $(element);
+      const textList = $element.text().split("\n");
+      const filterTextList = textList.filter((text) => !!text);
+      timeline.push({ children: filterTextList[0] });
+    });
+    return { code: 200, data: timeline };
+  } catch (error) {
+    return { code: 0, msg: error.msg };
+  }
+}
+function updateChannel() {
+  electron.ipcMain.on(channelConst.QUERY_SENSE_BY_KEYWORD, async (event, { panelId, keyword: searchKey }) => {
+    try {
+      let response = await getPageUrl({ searchKey });
+      if (response.code === 0) {
+        event.reply(`${channelConst.MAIN_PROCESS_SENSE_LIST}_${panelId}`, { code: 0, msg: response.msg });
+        return;
+      }
+      if (!response || !response.data) {
+        event.reply(`${channelConst.MAIN_PROCESS_SENSE_LIST}_${panelId}`, { code: 0, msg: "查询失败" });
+        return;
+      }
+      if (!response.data.body || !response.data.body.wapUrl) {
+        event.reply(`${channelConst.MAIN_PROCESS_SENSE_LIST}_${panelId}`, { code: 0, msg: "查询失败，没有链接" });
+        return;
+      }
+      let pageUrl = response.data.body.wapUrl;
+      let { code, data, msg } = await getPageContent({ pageUrl });
+      if (code === 0) {
+        event.reply(`${channelConst.MAIN_PROCESS_SENSE_LIST}_${panelId}`, { code: 0, msg });
+        return;
+      }
+      const res = await getSenseList({ content: data, pageUrl });
+      if (res.code === 0) {
+        event.reply(`${channelConst.MAIN_PROCESS_SENSE_LIST}_${panelId}`, { code: 0, msg: res.msg });
+        return;
+      }
+      event.reply(`${channelConst.MAIN_PROCESS_SENSE_LIST}_${panelId}`, { code: 200, data: { panelId, list: res.data } });
+    } catch (error) {
+      event.reply(`${channelConst.MAIN_PROCESS_SENSE_LIST}_${panelId}`, { code: 0, msg: error.msg });
+    }
+  });
+  electron.ipcMain.on(channelConst.QUERY_TIMELINE, async (event, { panelId, pageUrl }) => {
+    try {
+      let { code, data, msg } = await getPageContent({ pageUrl });
+      if (code === 0) {
+        event.reply(`${channelConst.MAIN_PROCESS_TIMELINE}_${panelId}`, { code: 0, msg });
+        return;
+      }
+      const res = await getTimeline({ content: data });
+      if (res.code === 0) {
+        event.reply(`${channelConst.MAIN_PROCESS_TIMELINE}_${panelId}`, { code: 0, msg: res.msg });
+        return;
+      }
+      event.reply(`${channelConst.MAIN_PROCESS_TIMELINE}_${panelId}`, { code: 200, data: { panelId, list: res.data } });
+    } catch (error) {
+      event.reply(`${channelConst.MAIN_PROCESS_TIMELINE}_${panelId}`, { code: 0, msg: error.msg });
+    }
+  });
+}
 function update(win2) {
   electronUpdater.autoUpdater.autoDownload = false;
   electronUpdater.autoUpdater.disableWebInstaller = false;
@@ -92,6 +197,7 @@ async function createWindow() {
       electron.shell.openExternal(url2);
     return { action: "deny" };
   });
+  updateChannel();
   update(win);
 }
 electron.app.whenReady().then(createWindow);
